@@ -6,6 +6,8 @@ export class PreventDragClick {
     let clickStartTime;
 
     elem.addEventListener('mousedown', (e) => {
+      this.mouseMoved = true;
+      
       clickStartX = e.clientX;
       clickStartY = e.clientY;
       clickStartTime = Date.now();

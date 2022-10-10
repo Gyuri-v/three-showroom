@@ -39,17 +39,6 @@ class App {
   }
 
   setModels() {
-    let cube = new THREE.Mesh(
-      new THREE.BoxGeometry(.1, .1, .1), 
-      new THREE.MeshNormalMaterial()
-    );
-    cube.position.set(0, 4, this.area / 2 + 3);
-    cube.material.transparent = true;
-    cube.material.opacity = 0;
-
-    this.cube = cube;
-    this.scene.add(cube);
-
     const planeGeometry = new THREE.BoxGeometry(this.area, this.area, 0.2);
     const planeMateroal = new THREE.MeshStandardMaterial({
       color: '#444',
@@ -71,11 +60,34 @@ class App {
     this.scene.add(wallMesh);
 
     // Box
-    const boxMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 'red' }));
+    const boxMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 1, 1), 
+      new THREE.MeshStandardMaterial({ color: 'red' })
+    );
     boxMesh.position.set(-5, 2, -this.area / 2);
     boxMesh.name = 'box';
     this.meshes.push(boxMesh);
     this.scene.add(boxMesh);
+
+    const boxMesh2 = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 1, 1), 
+      new THREE.MeshStandardMaterial({ color: 'blue' })
+    );
+    boxMesh2.position.set(-this.area / 2, 2, 5);
+    boxMesh2.rotation.y = Math.PI / 2;
+    boxMesh2.name = 'box';
+    this.meshes.push(boxMesh2);
+    this.scene.add(boxMesh2);
+
+    const boxMesh3 = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 1, 1), 
+      new THREE.MeshStandardMaterial({ color: 'green' })
+    );
+    boxMesh3.position.set(this.area / 2, 2, 10);
+    boxMesh3.rotation.y = -Math.PI / 2;
+    boxMesh3.name = 'box';
+    this.meshes.push(boxMesh3);
+    this.scene.add(boxMesh3);
 
     // pointer
     const pointerMesh = new THREE.Mesh(
@@ -106,13 +118,14 @@ class App {
 
   setEvent() {
     this.renderer.domElement.addEventListener('mousedown', (e) => {
-      this.isMouseClick = true;
-      this.raycasting();
       this.controls.lock();
     });
     this.renderer.domElement.addEventListener('mouseup', (e) => {
-      this.isMouseClick = false;
       this.controls.unlock();
+      if ( !this.preventDragClick.mouseMoved ) {
+        this.isMouseClick = true;
+        this.raycasting();
+      }
     });
     this.renderer.domElement.addEventListener('mousemove', (e) => {
       this.calcMousePoint(e);
@@ -120,10 +133,8 @@ class App {
     });
     this.renderer.domElement.addEventListener('wheel', (e) => {
       if (e.wheelDelta > 0) {
-        // this.cube.position(e.wheelDelta * 0.0005);
         this.controls.moveForward(e.wheelDelta * 0.0005);
       } else {
-        // this.cube.moveForward(e.wheelDelta * 0.0005);
         this.controls.moveForward(e.wheelDelta * 0.0005);
       }
     });
@@ -159,14 +170,14 @@ class App {
     this.raycaster = raycaster;
   }
 
-  raycasting = function () {
-    this.raycaster.setFromCamera(this.mousePoint, this.camera);
-    this.checkIntersects();
-  };
-
   calcMousePoint = function (e) {
     this.mousePoint.x = (e.clientX / this.renderer.domElement.clientWidth) * 2 - 1;
     this.mousePoint.y = -((e.clientY / this.renderer.domElement.clientHeight) * 2 - 1);
+  };
+
+  raycasting = function () {
+    this.raycaster.setFromCamera(this.mousePoint, this.camera);
+    this.checkIntersects();
   };
 
   checkIntersects = function () {
@@ -174,19 +185,43 @@ class App {
     this.pointerMesh.material.opacity = 0;
 
     for (const item of this.intersects) {
-      // floor intersects
+
+      if (item.object.name === "box") {
+        if (this.isMouseClick) {
+          this.isCameraMove = true;
+          this.startTime = Date.now();
+
+          this.cameraMovesTarget = item.object;
+
+          let targetQuaternion = new THREE.Quaternion().copy(this.cameraMovesTarget.quaternion);
+          let destinationPoint = item.object.position.clone();
+          if ( targetQuaternion.x === 0 && targetQuaternion.y === 0 && targetQuaternion.z === 0 ) {
+            destinationPoint.z = destinationPoint.z + 2;
+          } else if ( targetQuaternion.y > 0 ) {
+            destinationPoint.x = destinationPoint.x + 2;
+          } else if ( targetQuaternion.y < 0 ) {
+            destinationPoint.x = destinationPoint.x - 2;
+          }
+
+          let cameraMoves = new THREE.LineCurve3( this.camera.position, destinationPoint );
+          this.cameraMovesPoints = cameraMoves.getSpacedPoints(100);
+
+          this.isMouseClick = false;
+        }
+      }
+
       if (item.object.name === 'floor') {
         this.pointerMesh.material.opacity = 1;
 
         let destinationPoint = item.point.clone();
         destinationPoint.y = 4;
 
-        if (this.isMouseClick && this.preventDragClick.mouseMoved) {
+        if (this.isMouseClick) {
           this.isCameraMove = true;
           this.startTime = Date.now();
 
-          let cubeMoves = new THREE.LineCurve3(this.cube.position, destinationPoint);
-          this.cubeMovesPoints = cubeMoves.getSpacedPoints(100);
+          let cameraMoves = new THREE.LineCurve3(this.camera.position, destinationPoint);
+          this.cameraMovesPoints = cameraMoves.getSpacedPoints(100);
 
           this.isMouseClick = false;
 
@@ -206,52 +241,33 @@ class App {
 
   update() {
 
-    if (this.cube){
-      // this.cube.position.set(this.controls.position);
-
-      // this.camera.lookAt(this.cube.position.x, this.cube.position.y, this.cube.position.z);
-    }
-    console.log(
-      this.cube.position,
-      this.camera.position
-    )
-
     if (this.isCameraMove) {
       let elapsed = Math.floor((Date.now() - this.startTime) / 10);
 
-      if (elapsed < this.cubeMovesPoints.length) {
-        this.cube.position.set(
-          this.cubeMovesPoints[elapsed].x, 
-          this.cubeMovesPoints[elapsed].y, 
-          this.cubeMovesPoints[elapsed].z
-        );
-        this.camera.lookAt(this.cube.position.x, this.cube.position.y, this.cube.position.z);
-      }
 
-      if (elapsed < this.cubeMovesPoints.length && elapsed > 5){
+      if (elapsed < this.cameraMovesPoints.length) {
         this.camera.position.set(
-          this.cubeMovesPoints[elapsed - 5].x, 
-          this.cubeMovesPoints[elapsed - 5].y, 
-          this.cubeMovesPoints[elapsed - 5].z
+          this.cameraMovesPoints[elapsed].x, 
+          this.cameraMovesPoints[elapsed].y, 
+          this.cameraMovesPoints[elapsed].z
         );
+
+        if ( this.cameraMovesTarget ) {
+          const cameraQuaternion = new THREE.Quaternion().copy(this.camera.quaternion);
+          const targetQuaternion = new THREE.Quaternion().copy(this.cameraMovesTarget.quaternion);
+
+          this.camera.quaternion.slerpQuaternions(cameraQuaternion, targetQuaternion, 0.05);
+          console.log(elapsed, this.camera.quaternion, targetQuaternion);
+          // this.camera.lookAt(this.cameraMovesTarget.position)
+        }
       }
 
-      if (elapsed > this.cubeMovesPoints.length) {
-        // if (this.cubeMovesTarget) {
-        //   const cameraLook = this.camera.position.clone();
-        //   cameraLook.lerp(this.cubeMovesTarget, 0.05);
-        //   this.camera.lookAt(cameraLook);
-
-        //   this.cubeMovesTarget = null;
-        // }
-
+      if (elapsed > this.cameraMovesPoints.length) {
         elapsed = 0;
         this.isCameraMove = false;
+        this.cameraMovesTarget = null;
       }
-    } else {
-      this.cube.position.copy(this.camera.position);
     }
-  
   }
 
   render() {
