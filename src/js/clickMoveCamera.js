@@ -44,6 +44,8 @@ class App {
       new THREE.MeshNormalMaterial()
     );
     cube.position.set(0, 4, this.area / 2 + 3);
+    cube.material.transparent = true;
+    cube.material.opacity = 0;
 
     this.cube = cube;
     this.scene.add(cube);
@@ -93,6 +95,13 @@ class App {
     this.wallMesh = wallMesh;
     this.boxMesh = boxMesh;
     this.pointerMesh = pointerMesh;
+
+    // crosshair
+    this.sprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+
+      })
+    )
   }
 
   setEvent() {
@@ -200,11 +209,12 @@ class App {
     if (this.cube){
       // this.cube.position.set(this.controls.position);
 
-      this.cube.material.transparent = true;
-      this.cube.material.opacity = 0;
-
       // this.camera.lookAt(this.cube.position.x, this.cube.position.y, this.cube.position.z);
     }
+    console.log(
+      this.cube.position,
+      this.camera.position
+    )
 
     if (this.isCameraMove) {
       let elapsed = Math.floor((Date.now() - this.startTime) / 10);
@@ -215,6 +225,7 @@ class App {
           this.cubeMovesPoints[elapsed].y, 
           this.cubeMovesPoints[elapsed].z
         );
+        this.camera.lookAt(this.cube.position.x, this.cube.position.y, this.cube.position.z);
       }
 
       if (elapsed < this.cubeMovesPoints.length && elapsed > 5){
@@ -237,6 +248,8 @@ class App {
         elapsed = 0;
         this.isCameraMove = false;
       }
+    } else {
+      this.cube.position.copy(this.camera.position);
     }
   
   }
