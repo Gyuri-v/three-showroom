@@ -102,18 +102,17 @@ class App {
     pointerMesh.position.set(0, 0.11, this.area / 2 - 5);
     pointerMesh.material.transparent = true;
     this.scene.add(pointerMesh);
-
-    this.floorMesh = floorMesh;
-    this.wallMesh = wallMesh;
-    this.boxMesh = boxMesh;
+    
     this.pointerMesh = pointerMesh;
 
-    // crosshair
-    this.sprite = new THREE.Sprite(
-      new THREE.SpriteMaterial({
-
-      })
+    // pillar
+    const pillarMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(2, 30, 2),
+      new THREE.MeshStandardMaterial({ color: 'gray' })
     )
+    pillarMesh.position.set(0, 15, 0);
+    this.meshes.push(pillarMesh);
+    this.scene.add(pillarMesh);
   }
 
   setEvent() {
@@ -186,6 +185,8 @@ class App {
 
     for (const item of this.intersects) {
 
+      console.log(item.object.name);
+
       if (item.object.name === "box") {
         if (this.isMouseClick) {
           this.isCameraMove = true;
@@ -236,6 +237,8 @@ class App {
         this.pointerMesh.position.x = destinationPoint.x;
         this.pointerMesh.position.z = destinationPoint.z;
       }
+
+      break;
     }
   };
 
@@ -292,3 +295,6 @@ class App {
 window.onload = function () {
   new App();
 };
+
+
+// raycaster 클릭인지 mouse up down 인지 정리가 필요하지 않을까 싶기도
