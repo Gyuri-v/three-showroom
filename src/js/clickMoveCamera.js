@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls';
 import { PreventDragClick } from '../js/PreventDragClick';
-import { gsap } from 'gsap';
 
 class App {
   constructor() {
@@ -24,9 +23,11 @@ class App {
     this.scene = scene;
 
     this.meshes = [];
+    this.collisionMeshes = [];
     this.area = 50;
     this.startTime = 0;
     this.isMouseClick = false;
+    this.isWheeelStop = false;
     this.mousePoint = new THREE.Vector2();
     this.preventDragClick = new PreventDragClick(this.renderer.domElement);
 
@@ -101,6 +102,7 @@ class App {
     pointerMesh.rotation.x = -Math.PI / 2;
     pointerMesh.position.set(0, 0.11, this.area / 2 - 5);
     pointerMesh.material.transparent = true;
+    pointerMesh.name = 'pointer';
     this.scene.add(pointerMesh);
     
     this.pointerMesh = pointerMesh;
@@ -111,6 +113,8 @@ class App {
       new THREE.MeshStandardMaterial({ color: 'gray' })
     )
     pillarMesh.position.set(0, 15, 0);
+    pillarMesh.name = 'pillar';
+    this.pillarMesh = pillarMesh;
     this.meshes.push(pillarMesh);
     this.scene.add(pillarMesh);
   }
@@ -131,9 +135,42 @@ class App {
       this.raycasting();
     });
     this.renderer.domElement.addEventListener('wheel', (e) => {
+      let frontCheck = true;
+      let backCheck = true;
+
+      // Front
+      let cameraDirectionFront = new THREE.Vector3(0, 0, -1); 
+      cameraDirectionFront.applyQuaternion( this.camera.quaternion ).normalize(); // camera 가 바라보는 방향 구하기 -> 정규화
+
+      this.raycaster.set( this.camera.position, cameraDirectionFront); // raycaster를 카메라를 기준으로, 카메라가 보고있는 방향으로 광선 쏘도록 설정
+      this.collisionIntersects = this.raycaster.intersectObjects(this.meshes, false); // this.meshes 배열 요소 중애 raycaster 광선과 부딪히는 요소 찾기
+
+      if ( 
+        this.collisionIntersects.length > 0 && // 부딪히는 요소가 있고
+        this.collisionIntersects[0].distance < 3 // 부딪히는 요소와의 거리가 3 이하면 휠 불가능
+      ) {
+        frontCheck = false;
+      }
+
+      // Back
+      let cameraDirectionBack = cameraDirectionFront.clone();
+      cameraDirectionBack.z = cameraDirectionBack.z * -1;
+      
+      this.raycaster.set( this.camera.position, cameraDirectionBack);
+      this.collisionIntersects = this.raycaster.intersectObjects(this.meshes, false);
+
+      if ( 
+        this.collisionIntersects.length > 0 && // 부딪히는 요소가 있고
+        this.collisionIntersects[0].distance < 3 // 부딪히는 요소와의 거리가 3 이하면 휠 불가능
+      ) {
+        backCheck = false;
+      }
+
       if (e.wheelDelta > 0) {
+        if ( !frontCheck ) return;
         this.controls.moveForward(e.wheelDelta * 0.0005);
       } else {
+        if ( !backCheck ) return;
         this.controls.moveForward(e.wheelDelta * 0.0005);
       }
     });
@@ -180,12 +217,10 @@ class App {
   };
 
   checkIntersects = function () {
-    this.intersects = this.raycaster.intersectObjects(this.meshes);
+    const intersects = this.raycaster.intersectObjects(this.meshes);
     this.pointerMesh.material.opacity = 0;
 
-    for (const item of this.intersects) {
-
-      console.log(item.object.name);
+    for (const item of intersects) {
 
       if (item.object.name === "box") {
         if (this.isMouseClick) {
@@ -193,6 +228,8 @@ class App {
           this.startTime = Date.now();
 
           this.cameraMovesTarget = item.object;
+
+          console.log(item.object.quaternion);
 
           let targetQuaternion = new THREE.Quaternion().copy(this.cameraMovesTarget.quaternion);
           let destinationPoint = item.object.position.clone();
@@ -206,8 +243,6 @@ class App {
 
           let cameraMoves = new THREE.LineCurve3( this.camera.position, destinationPoint );
           this.cameraMovesPoints = cameraMoves.getSpacedPoints(100);
-
-          this.isMouseClick = false;
         }
       }
 
@@ -223,20 +258,13 @@ class App {
 
           let cameraMoves = new THREE.LineCurve3(this.camera.position, destinationPoint);
           this.cameraMovesPoints = cameraMoves.getSpacedPoints(100);
-
-          this.isMouseClick = false;
-
-          // gsap.to(this.camera.position, {
-          //   duration: 1,
-          //   x: destinationPoint.x,
-          //   y: 4,
-          //   z: destinationPoint.z,
-          // });
         }
 
         this.pointerMesh.position.x = destinationPoint.x;
         this.pointerMesh.position.z = destinationPoint.z;
       }
+
+      this.isMouseClick = false;
 
       break;
     }
@@ -246,7 +274,6 @@ class App {
 
     if (this.isCameraMove) {
       let elapsed = Math.floor((Date.now() - this.startTime) / 10);
-
 
       if (elapsed < this.cameraMovesPoints.length) {
         this.camera.position.set(
@@ -260,8 +287,6 @@ class App {
           const targetQuaternion = new THREE.Quaternion().copy(this.cameraMovesTarget.quaternion);
 
           this.camera.quaternion.slerpQuaternions(cameraQuaternion, targetQuaternion, 0.05);
-          console.log(elapsed, this.camera.quaternion, targetQuaternion);
-          // this.camera.lookAt(this.cameraMovesTarget.position)
         }
       }
 
@@ -295,6 +320,3 @@ class App {
 window.onload = function () {
   new App();
 };
-
-
-// raycaster 클릭인지 mouse up down 인지 정리가 필요하지 않을까 싶기도
