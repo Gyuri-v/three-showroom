@@ -2,6 +2,10 @@ import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls';
 import { PreventDragClick } from '../js/PreventDragClick';
 
+import * as THREE from "./assets/lib/three.module.js";
+import { PointerLockControls } from "./assets/lib/PointerLockControls.js";
+import { PreventDragClick } from './assets/js/PreventDragClick';
+
 class App {
   constructor() {
     this.initialize();
@@ -25,6 +29,7 @@ class App {
     this.meshes = [];
     this.collisionMeshes = [];
     this.area = 50;
+    this.positionY = 4;
     this.startTime = 0;
     this.isMouseClick = false;
     this.isWheeelStop = false;
@@ -65,7 +70,7 @@ class App {
       new THREE.BoxGeometry(1, 1, 1), 
       new THREE.MeshStandardMaterial({ color: 'red' })
     );
-    boxMesh.position.set(-5, 2, -this.area / 2);
+    boxMesh.position.set(-5, 3, -this.area / 2);
     boxMesh.name = 'box';
     this.meshes.push(boxMesh);
     this.scene.add(boxMesh);
@@ -74,7 +79,7 @@ class App {
       new THREE.BoxGeometry(1, 1, 1), 
       new THREE.MeshStandardMaterial({ color: 'blue' })
     );
-    boxMesh2.position.set(-this.area / 2, 2, 5);
+    boxMesh2.position.set(-this.area / 2, 4, 5);
     boxMesh2.rotation.y = Math.PI / 2;
     boxMesh2.name = 'box';
     this.meshes.push(boxMesh2);
@@ -84,7 +89,7 @@ class App {
       new THREE.BoxGeometry(1, 1, 1), 
       new THREE.MeshStandardMaterial({ color: 'green' })
     );
-    boxMesh3.position.set(this.area / 2, 2, 10);
+    boxMesh3.position.set(this.area / 2, 5, 10);
     boxMesh3.rotation.y = -Math.PI / 2;
     boxMesh3.name = 'box';
     this.meshes.push(boxMesh3);
@@ -178,7 +183,7 @@ class App {
 
   setCamera() {
     let camera = new THREE.PerspectiveCamera(47, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.set(0, 4, this.area / 2 + 5);
+    camera.position.set(0, this.positionY, this.area / 2 + 5);
     this.scene.add(camera);
 
     this.camera = camera;
@@ -227,11 +232,9 @@ class App {
           this.isCameraMove = true;
           this.startTime = Date.now();
 
-          this.cameraMovesTarget = item.object;
+          this.cameraLookTarget = item.object;
 
-          console.log(item.object.quaternion);
-
-          let targetQuaternion = new THREE.Quaternion().copy(this.cameraMovesTarget.quaternion);
+          let targetQuaternion = new THREE.Quaternion().copy(this.cameraLookTarget.quaternion);
           let destinationPoint = item.object.position.clone();
           if ( targetQuaternion.x === 0 && targetQuaternion.y === 0 && targetQuaternion.z === 0 ) {
             destinationPoint.z = destinationPoint.z + 2;
@@ -250,11 +253,13 @@ class App {
         this.pointerMesh.material.opacity = 1;
 
         let destinationPoint = item.point.clone();
-        destinationPoint.y = 4;
+        destinationPoint.y = this.positionY;
 
         if (this.isMouseClick) {
           this.isCameraMove = true;
           this.startTime = Date.now();
+
+          this.cameraLookPoint = item.point.clone();
 
           let cameraMoves = new THREE.LineCurve3(this.camera.position, destinationPoint);
           this.cameraMovesPoints = cameraMoves.getSpacedPoints(100);
@@ -282,9 +287,18 @@ class App {
           this.cameraMovesPoints[elapsed].z
         );
 
-        if ( this.cameraMovesTarget ) {
+        if ( this.cameraLookPoint ) {
+          const startCamera = this.camera.quaternion.clone();
+
+          this.camera.lookAt(this.cameraLookPoint.x, this.positionY, this.cameraLookPoint.z);
+          const endCamera = this.camera.quaternion.clone();
+
+          this.camera.quaternion.slerpQuaternions(startCamera, endCamera, 0.05)
+        }
+
+        if ( this.cameraLookTarget ) {
           const cameraQuaternion = new THREE.Quaternion().copy(this.camera.quaternion);
-          const targetQuaternion = new THREE.Quaternion().copy(this.cameraMovesTarget.quaternion);
+          const targetQuaternion = new THREE.Quaternion().copy(this.cameraLookTarget.quaternion);
 
           this.camera.quaternion.slerpQuaternions(cameraQuaternion, targetQuaternion, 0.05);
         }
@@ -293,7 +307,8 @@ class App {
       if (elapsed > this.cameraMovesPoints.length) {
         elapsed = 0;
         this.isCameraMove = false;
-        this.cameraMovesTarget = null;
+        this.cameraLookTarget = null;
+        this.cameraLookPoint = null;
       }
     }
   }
