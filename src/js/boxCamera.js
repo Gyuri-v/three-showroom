@@ -68,18 +68,15 @@ class App {
                 // object.mixer = new THREE.AnimationMixer( object );
                 // this.mixers.push( object.mixer );
 
-                // console.log( object.animations[0].tracks[1] );
+                console.log( object.children );
                 // console.log( object.animations[0].tracks[1].times );
-                console.log( object.animations[0].tracks[1].values );
+                // console.log( object.animations[0].tracks[1].values );
+
+                this.empty = object.children[2];
+                // const emptyLine = this.empty.getSpacedPoints(100);
+                // console.log(this.empty);
 
                 this.animPosition = object.animations[0].tracks[0].values;
-                this.animQuaternion = object.animations[0].tracks[1].values;
-
-                // this.anim = anim;
-
-                // console.log( object.children );
-                // console.log( object.animations[0].duration );
-                // console.log( this.anim.time );
                 
                 this.scene.add(object);
 
@@ -90,18 +87,6 @@ class App {
                 );
                 firstCameraPosition.multiplyScalar(0.01);
                 this.camera.position.copy( firstCameraPosition );
-                    
-
-                let firstCameraQuaternion = new THREE.Quaternion( 
-                    this.animQuaternion[0],
-                    this.animQuaternion[1] * -1,
-                    this.animQuaternion[2],
-                    this.animQuaternion[3],
-                );
-                // this.camera.lookAt(0, 0, 0);
-                // console.log( this.camera.quaternion, firstCameraQuaternion )
-                this.camera.quaternion.copy( firstCameraQuaternion );
-                // console.log( this.camera.quaternion, firstCameraQuaternion )
             }
         )
     }
@@ -133,8 +118,6 @@ class App {
             if ( timeLine < 0 )   timeLine = 99;
             if ( timeLine > 99 ) timeLine = 0;
 
-            console.log( Math.round(timeLine) );
-
             let currentLine = new THREE.Vector3(
                 this.animPosition[Math.round(timeLine) * 3],
                 this.animPosition[Math.round(timeLine) * 3 + 1],
@@ -142,16 +125,6 @@ class App {
             )
             currentLine = currentLine.multiplyScalar(0.01);
             this.currentLine = currentLine;
-
-            let currentQuaternion = new THREE.Quaternion(
-                this.animQuaternion[Math.round(timeLine) * 4],
-                this.animQuaternion[Math.round(timeLine) * -4 + 1],
-                this.animQuaternion[Math.round(timeLine) * 4 + 2],
-                this.animQuaternion[Math.round(timeLine) * 4 + 3],
-            )
-            // currentQuaternion = currentQuaternion.multiplyScalar(0.01);
-            // console.log( currentQuaternion );
-            this.currentQuaternion = currentQuaternion;
         })
     }
 
@@ -159,10 +132,6 @@ class App {
         if ( !this.currentLine /* || !this.currentQuaternion */ ) return;
 
         this.camera.position.lerp( this.currentLine, 0.1 );
-        // this.camera.lookAt(0, 0, 0);
-        this.camera.quaternion.slerp( this.currentQuaternion, 0.1 );
-
-        // console.log( this.camera.quaternion );
     }
 
     render() {
