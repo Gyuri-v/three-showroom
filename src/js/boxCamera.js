@@ -64,29 +64,43 @@ class App {
                 object.traverse(c => {
                     c.castShadow = true;
                 });
-                
-                // object.mixer = new THREE.AnimationMixer( object );
-                // this.mixers.push( object.mixer );
 
-                console.log( object.children );
-                // console.log( object.animations[0].tracks[1].times );
-                // console.log( object.animations[0].tracks[1].values );
-
-                this.empty = object.children[2];
-                // const emptyLine = this.empty.getSpacedPoints(100);
-                // console.log(this.empty);
-
-                this.animPosition = object.animations[0].tracks[0].values;
-                
-                this.scene.add(object);
-
-                let firstCameraPosition = new THREE.Vector3( 
-                    this.animPosition[0],
-                    this.animPosition[1],
-                    this.animPosition[2]
+                /* 카메라 수정 소스 */
+                const targetAnimationTrack = object.animations[0].tracks[1];
+                const quaternion = new THREE.Quaternion();
+                const quaternionToFix = new THREE.Quaternion().setFromAxisAngle(
+                    new THREE.Vector3(1, 0, 0),
+                    -Math.PI / 2
                 );
-                firstCameraPosition.multiplyScalar(0.01);
-                this.camera.position.copy( firstCameraPosition );
+                targetAnimationTrack.times.forEach(function (time, index) {
+                    const valueIndex = index * 4;
+                    quaternion.set(
+                        targetAnimationTrack.values[valueIndex],
+                        targetAnimationTrack.values[valueIndex + 1],
+                        targetAnimationTrack.values[valueIndex + 2],
+                        targetAnimationTrack.values[valueIndex + 3]
+                    );
+                    quaternion.multiply(quaternionToFix);
+                    targetAnimationTrack.values[valueIndex] = quaternion.x;
+                    targetAnimationTrack.values[valueIndex + 1] = quaternion.y;
+                    targetAnimationTrack.values[valueIndex + 2] = quaternion.z;
+                    targetAnimationTrack.values[valueIndex + 3] = quaternion.w;
+                });
+                /* 카메라 수정 소스 끝 */
+
+                this.cameraModel = object.children[0];
+                this.emptyModel = object.children[2];
+                this.boxModel = object.children[3];
+                
+                object.mixer = new THREE.AnimationMixer( object );
+                this.mixers.push( object.mixer );
+
+                const anim = object.mixer.clipAction( object.animations[0] );                // anim.repetitions = 1;
+                anim.clampWhenFinished = true;
+                anim.play();
+                // anim.time = 1;
+
+                this.scene.add(object);
             }
         )
     }
@@ -117,21 +131,18 @@ class App {
 
             if ( timeLine < 0 )   timeLine = 99;
             if ( timeLine > 99 ) timeLine = 0;
-
-            let currentLine = new THREE.Vector3(
-                this.animPosition[Math.round(timeLine) * 3],
-                this.animPosition[Math.round(timeLine) * 3 + 1],
-                this.animPosition[Math.round(timeLine) * 3 + 2],
-            )
-            currentLine = currentLine.multiplyScalar(0.01);
-            this.currentLine = currentLine;
         })
     }
 
     update() {
-        if ( !this.currentLine /* || !this.currentQuaternion */ ) return;
+        let delta = this.clock.getDelta();
 
-        this.camera.position.lerp( this.currentLine, 0.1 );
+        if ( this.mixers.length > 0 ) {
+            this.mixers[0].update( delta );
+
+            this.camera.position.copy( this.cameraModel.position.multiplyScalar(0.01) );
+            this.camera.lookAt( this.emptyModel.position.multiplyScalar(0.01) );
+        }
     }
 
     render() {
