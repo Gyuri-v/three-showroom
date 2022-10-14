@@ -2,10 +2,6 @@ import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls';
 import { PreventDragClick } from '../js/PreventDragClick';
 
-import * as THREE from "./assets/lib/three.module.js";
-import { PointerLockControls } from "./assets/lib/PointerLockControls.js";
-import { PreventDragClick } from './assets/js/PreventDragClick';
-
 class App {
   constructor() {
     this.initialize();
