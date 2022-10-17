@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { Euler } from 'three';
 
 class App {
     constructor() {
@@ -40,10 +40,14 @@ class App {
         this.setEvent();
     }
 
-    setControls() {
-        const controls = new OrbitControls(this.camera, this.renderer.domElement);
-        this.controls = controls;
-    }
+    // setControls() {
+    //     const controls = new PointerLockControls(this.camera, this.renderer.domElement);
+    //     controls.addEventListener('change', function () {
+    //         this.isMoveControl = true;
+    //     }.bind(this))
+
+    //     this.controls = controls;
+    // }
 
     setCamera() {
         let camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -125,8 +129,14 @@ class App {
                 this.mixers[0].setTime( 0 );
                 this.anim.paused = true;
                 this.camera.position.copy( this.cameraModel.position.multiplyScalar(0.01) );
-                // this.camera.quaternion.copy( this.cameraModel.quaternion );
                 this.camera.lookAt( this.emptyModel.position.multiplyScalar(0.01) );
+                // this.camera.quaternion.copy( this.cameraModel.quaternion );
+
+                // const startCameraQuaternion = this.camera.quaternion.clone();
+                // this.camera.lookAt( this.emptyModel.position.multiplyScalar(0.01) );
+                // const endCameraQuaternion = this.camera.quaternion.clone();
+
+                // this.camera.quaternion.slerpQuaternions(startCameraQuaternion, endCameraQuaternion, 0.05);
 
                 // console.log( this.cameraModel.position );
             }
@@ -134,6 +144,40 @@ class App {
     }
 
     setEvent() {
+        this.renderer.domElement.addEventListener('mousedown', (e) => {
+            this.isControls = true;
+
+            this.cameraBeforeQ = this.camera.quaternion;
+        });
+        this.renderer.domElement.addEventListener('mouseup', (e) => {
+            this.isControls = false;
+
+            this.cameraAfterQ = this.camera.quaternion;
+        });
+        this.renderer.domElement.addEventListener('mousemove', (event) => {
+            if ( !this.isControls ) return;
+
+            const _PI_2 = Math.PI / 2;
+            const _euler = new Euler( 0, 0, 0, 'YXZ' );
+
+            this.minPolarAngle = 0; // radians
+            this.maxPolarAngle = Math.PI; // radians
+
+            this.pointerSpeed = 1.0;
+
+            const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
+            const movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+
+            _euler.setFromQuaternion(this.camera.quaternion);
+
+            _euler.y -= movementX * 0.002 * this.pointerSpeed;
+            _euler.x -= movementY * 0.002 * this.pointerSpeed;
+
+            _euler.x = Math.max(_PI_2 - this.maxPolarAngle, Math.min(_PI_2 - this.minPolarAngle, _euler.x));
+
+            this.camera.quaternion.setFromEuler(_euler);
+        })
+        
         let timeLine = 0;
         this.renderer.domElement.addEventListener('wheel', (e) => {
 
@@ -151,22 +195,28 @@ class App {
             this.anim.paused = true;
 
             this.camera.position.copy( this.cameraModel.position.multiplyScalar(0.01) );
-            // this.camera.quaternion.copy( this.cameraModel.quaternion );
             this.camera.lookAt( this.emptyModel.position.multiplyScalar(0.01) );
+            // this.camera.quaternion.copy( this.cameraModel.quaternion );
 
-            console.log( this.camera.quaternion );
-
-            // this.camera.updateProjectionMatrix();
+            // console.log( this.cameraStart, this.cameraEnd ); 
         })
     }
 
-    update() {
-        
+    update() {        
         let delta = this.clock.getDelta();
 
         if ( this.mixers.length > 0 ) {
+            this.mixers[0].update( delta ); 
 
-            this.mixers[0].update( delta );
+            // if ( this.cameraBeforeQ ) {
+            //     this.camera.quaternion.rotateTowards( this.cameraBeforeQ, 0.05 );
+            // }
+
+            // if ( this.isMoveControl ) {
+            //     this.camera.quaternion.slerpQuaternions(this.cameraStart, this.cameraEnd, 0.05);
+
+            //     this.isMoveControl = false;
+            // }
         }
     }
 
@@ -192,3 +242,6 @@ class App {
 window.onload = function () {
     new App();
 };
+
+
+

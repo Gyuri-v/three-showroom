@@ -190,8 +190,6 @@ class App {
 
   setControls() {
     const controls = new PointerLockControls(this.camera, this.renderer.domElement);
-
-    const contCamera = this.camera;
     
     controls.addEventListener( 'change', this.setFovOrigin.bind(this));
 
