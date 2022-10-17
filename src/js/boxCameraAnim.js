@@ -81,26 +81,26 @@ class App {
                 });
 
                 /* 카메라 수정 소스 */
-                // const targetAnimationTrack = object.animations[0].tracks[1];
-                // const quaternion = new THREE.Quaternion();
-                // const quaternionToFix = new THREE.Quaternion().setFromAxisAngle(
-                //     new THREE.Vector3(1, 0, 0),
-                //     -Math.PI / 2
-                // );
-                // targetAnimationTrack.times.forEach(function (time, index) {
-                //     const valueIndex = index * 4;
-                //     quaternion.set(
-                //         targetAnimationTrack.values[valueIndex],
-                //         targetAnimationTrack.values[valueIndex + 1],
-                //         targetAnimationTrack.values[valueIndex + 2],
-                //         targetAnimationTrack.values[valueIndex + 3]
-                //     );
-                //     quaternion.multiply(quaternionToFix);
-                //     targetAnimationTrack.values[valueIndex] = quaternion.x;
-                //     targetAnimationTrack.values[valueIndex + 1] = quaternion.y;
-                //     targetAnimationTrack.values[valueIndex + 2] = quaternion.z;
-                //     targetAnimationTrack.values[valueIndex + 3] = quaternion.w;
-                // });
+                const targetAnimationTrack = object.animations[0].tracks[1];
+                const quaternion = new THREE.Quaternion();
+                const quaternionToFix = new THREE.Quaternion().setFromAxisAngle(
+                    new THREE.Vector3(0, 1, 0),
+                    -Math.PI / 2
+                );
+                targetAnimationTrack.times.forEach(function (time, index) {
+                    const valueIndex = index * 4;
+                    quaternion.set(
+                        targetAnimationTrack.values[valueIndex],
+                        targetAnimationTrack.values[valueIndex + 1],
+                        targetAnimationTrack.values[valueIndex + 2],
+                        targetAnimationTrack.values[valueIndex + 3]
+                    );
+                    quaternion.multiply(quaternionToFix);
+                    targetAnimationTrack.values[valueIndex] = quaternion.x;
+                    targetAnimationTrack.values[valueIndex + 1] = quaternion.y;
+                    targetAnimationTrack.values[valueIndex + 2] = quaternion.z;
+                    targetAnimationTrack.values[valueIndex + 3] = quaternion.w;
+                });
                 /* 카메라 수정 소스 끝 */
 
                 this.cameraModel = object.children[0];
@@ -129,8 +129,7 @@ class App {
                 this.mixers[0].setTime( 0 );
                 this.anim.paused = true;
                 this.camera.position.copy( this.cameraModel.position.multiplyScalar(0.01) );
-                this.camera.lookAt( this.emptyModel.position.multiplyScalar(0.01) );
-                // this.camera.quaternion.copy( this.cameraModel.quaternion );
+                this.camera.quaternion.copy( this.cameraModel.quaternion );
 
                 // const startCameraQuaternion = this.camera.quaternion.clone();
                 // this.camera.lookAt( this.emptyModel.position.multiplyScalar(0.01) );
@@ -195,8 +194,7 @@ class App {
             this.anim.paused = true;
 
             this.camera.position.copy( this.cameraModel.position.multiplyScalar(0.01) );
-            this.camera.lookAt( this.emptyModel.position.multiplyScalar(0.01) );
-            // this.camera.quaternion.copy( this.cameraModel.quaternion );
+            this.camera.quaternion.copy( this.cameraModel.quaternion );
 
             // console.log( this.cameraStart, this.cameraEnd ); 
         })
