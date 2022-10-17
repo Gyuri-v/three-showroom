@@ -170,9 +170,11 @@ class App {
       if (e.wheelDelta > 0) {
         if ( !frontCheck ) return;
         this.controls.moveForward(e.wheelDelta * 0.0005);
+        this.setFovOrigin();
       } else {
         if ( !backCheck ) return;
         this.controls.moveForward(e.wheelDelta * 0.0005);
+        this.setFovOrigin();
       }
     });
   }
@@ -189,7 +191,18 @@ class App {
   setControls() {
     const controls = new PointerLockControls(this.camera, this.renderer.domElement);
 
+    const contCamera = this.camera;
+    
+    controls.addEventListener( 'change', this.setFovOrigin.bind(this));
+
     this.controls = controls;
+  }
+
+  setFovOrigin() {
+    if ( this.camera.fov == 47 ) return;
+
+    this.cameraFov = 47;
+    this.cameraFovCount = 10;
   }
 
 
@@ -234,22 +247,14 @@ class App {
           const sizeX = size.max.x - size.min.x;
           const sizeZ = size.max.z - size.min.z;
           const sizeY = size.max.y - size.min.y;
-          // console.log( sizeX, sizeY, sizeZ );
 
           const targetHeight = sizeY * window.innerHeight / (window.innerHeight / 2);
           // let cameraDistanceFromMesh = this.camera.position.distanceTo(item.object.position);
           // cameraDistanceFromMesh -= sizeZ / 2;
 
-          // console.log( 2 * (180 / Math.PI), Math.atan(targetHeight / (2 * cameraDistanceFromMesh)) );
-          // this.camera.fov = 100;
-          // this.camera.updateProjectionMatrix();
-
           this.cameraFov = 2 * (180 / Math.PI) * Math.atan(targetHeight / 2);
           this.cameraFovCount = 60;
-
-          // console.log( 'targetHeight', targetHeight, 'cameraDistanceFromMesh',cameraDistanceFromMesh, targetHeight / (2 * cameraDistanceFromMesh) );
-
-          console.log( this.camera.fov );
+          // this.camera.updateProjectionMatrix();
 
           let targetQuaternion = new THREE.Quaternion().copy(this.cameraLookTarget.quaternion);
           let destinationPoint = item.object.position.clone();
@@ -293,13 +298,9 @@ class App {
   };
 
   update() {
-      
-    console.log('fov', this.camera.fov );
 
     if (this.isCameraMove) {
       let elapsed = Math.floor((Date.now() - this.startTime) / 10);
-
-      // console.log( elapsed );
 
       if (elapsed < this.cameraMovesPoints.length) {
         this.camera.position.set(
@@ -323,19 +324,6 @@ class App {
 
           this.camera.quaternion.slerpQuaternions(cameraQuaternion, targetQuaternion, 0.05);
         }
-
-
-        if ( this.cameraFov ) {
-          // console.log( this.cameraMovesPoints.length - elapsed );
-          const count = (this.cameraMovesPoints.length - elapsed);
-
-          // if ( this.camera.fov - this.cameraFov < 1 ) return;
-          
-          // console.log('fov', this.camera.fov, this.cameraFov, (this.camera.fov - this.cameraFov) / 2 );
-
-          this.camera.fov -= (this.camera.fov - this.cameraFov) / count;
-          this.camera.updateProjectionMatrix();
-        }
       }
 
       if (elapsed > this.cameraMovesPoints.length) {
@@ -346,8 +334,12 @@ class App {
       }
     }
 
+    if ( this.cameraFov && this.cameraFovCount > 1 ) {
+      this.cameraFovCount--;
 
-
+      this.camera.fov -= (this.camera.fov - this.cameraFov) / this.cameraFovCount;
+      this.camera.updateProjectionMatrix();
+    }
   }
 
   render() {

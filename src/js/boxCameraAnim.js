@@ -102,7 +102,17 @@ class App {
                 this.cameraModel = object.children[0];
                 this.emptyModel = object.children[2];
                 this.boxModel = object.children[3];
+
+                // console.log( this.camera.position )
+                // this.camera.position = 
+                // console.log(object);
+                // this.camera.position.copy( this.cameraModel.position.multiplyScalar(0.01) );
+                // this.camera.quaternion.copy( this.cameraModel.quaternion );
                 
+                // this.camera = this.cameraModel;
+                // this.camera.lookAt(object.position);
+                this.scene.add(object);
+
                 object.mixer = new THREE.AnimationMixer( object );
                 this.mixers.push( object.mixer );
 
@@ -112,11 +122,10 @@ class App {
                 this.anim = anim;
                 this.animDuration = object.animations[0].duration;
 
-                this.scene.add(object);
-
                 this.mixers[0].setTime( 0 );
                 this.anim.paused = true;
                 this.camera.position.copy( this.cameraModel.position.multiplyScalar(0.01) );
+                // this.camera.quaternion.copy( this.cameraModel.quaternion );
                 this.camera.lookAt( this.emptyModel.position.multiplyScalar(0.01) );
 
                 // console.log( this.cameraModel.position );
@@ -142,17 +151,21 @@ class App {
             this.anim.paused = true;
 
             this.camera.position.copy( this.cameraModel.position.multiplyScalar(0.01) );
-            this.camera.lookAt( this.emptyModel.position.multiplyScalar(0.01) );
             // this.camera.quaternion.copy( this.cameraModel.quaternion );
+            this.camera.lookAt( this.emptyModel.position.multiplyScalar(0.01) );
+
+            console.log( this.camera.quaternion );
 
             // this.camera.updateProjectionMatrix();
         })
     }
 
     update() {
+        
         let delta = this.clock.getDelta();
 
         if ( this.mixers.length > 0 ) {
+
             this.mixers[0].update( delta );
         }
     }
