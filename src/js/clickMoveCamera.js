@@ -244,26 +244,27 @@ class App {
           this.cameraLookTarget = item.object;
 
           const size = new THREE.Box3().setFromObject(item.object);
-          const sizeX = size.max.x - size.min.x;
-          const sizeZ = size.max.z - size.min.z;
           const sizeY = size.max.y - size.min.y;
+          const sizeZ = size.max.z - size.min.z;
+
+          const cameraBoxDistance = 2;
 
           const targetHeight = sizeY * window.innerHeight / (window.innerHeight / 2);
           // let cameraDistanceFromMesh = this.camera.position.distanceTo(item.object.position);
           // cameraDistanceFromMesh -= sizeZ / 2;
 
-          this.cameraFov = 2 * (180 / Math.PI) * Math.atan(targetHeight / 2);
+          this.cameraFov = 2 * (180 / Math.PI) * Math.atan(targetHeight / cameraBoxDistance);
           this.cameraFovCount = 60;
           // this.camera.updateProjectionMatrix();
 
           let targetQuaternion = new THREE.Quaternion().copy(this.cameraLookTarget.quaternion);
           let destinationPoint = item.object.position.clone();
           if ( targetQuaternion.x === 0 && targetQuaternion.y === 0 && targetQuaternion.z === 0 ) {
-            destinationPoint.z = destinationPoint.z + 2;
+            destinationPoint.z = destinationPoint.z + cameraBoxDistance;
           } else if ( targetQuaternion.y > 0 ) {
-            destinationPoint.x = destinationPoint.x + 2;
+            destinationPoint.x = destinationPoint.x + cameraBoxDistance;
           } else if ( targetQuaternion.y < 0 ) {
-            destinationPoint.x = destinationPoint.x - 2;
+            destinationPoint.x = destinationPoint.x - cameraBoxDistance;
           }
 
           let cameraMoves = new THREE.LineCurve3( this.camera.position, destinationPoint );
