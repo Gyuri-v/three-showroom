@@ -6,6 +6,11 @@ import {
     PreventDragClick
 } from '../js/PreventDragClick';
 
+const q1 = new THREE.Quaternion(1, 1, 1, 1);
+const q2 = new THREE.Quaternion(1, 1, 1, 1);
+
+console.log( q1.equals(q2) ); 
+
 class App {
     constructor() {
         this.initialize();
